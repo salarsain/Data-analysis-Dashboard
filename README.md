@@ -23,5 +23,3 @@ This Data Analysis Dashboard is an interactive platform for visualizing and anal
 - Python 3.8 or above
 - Node.js (for frontend dependencies)
 - Virtual Environment (optional but recommended)
-
-### Steps

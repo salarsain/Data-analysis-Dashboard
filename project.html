@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Analysis Dashboard</title>
+    <style>
+        /* General body styling */
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #4e5d6d, #1c2833);
+            color: #fff;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;  /* Change from center to top */
+            height: 100%;
+            min-height: 100vh;
+            overflow-y: auto; /* Allow vertical scrolling */
+            overflow-x: hidden; /* Hide horizontal scroll */
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 30px;
+            font-weight: 600;
+            color: #f39c12;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 600px;
+            background: rgba(44, 62, 80, 0.9);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;  /* Space for better scrolling */
+        }
+
+        .container:hover {
+            transform: scale(1.03);
+        }
+
+        input, select, button {
+            width: 100%;
+            margin: 12px 0;
+            box: 100px;
+            padding: 12px;
+            font-size: 1rem;
+            border: 2px solid #34495e;
+            border-radius: 8px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        input[type="file"] {
+            background: #34495e;
+            color: #ecf0f1;
+        }
+
+        input:focus, select:focus, button:focus {
+            border-color: #f39c12;
+        }
+
+        button {
+            background: #e67e22;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            padding: 14px;
+        }
+
+        button:hover {
+            background: #d35400;
+            transform: translateY(-3px);
+        }
+
+        button:disabled {
+            background: #7f8c8d;
+            cursor: not-allowed;
+        }
+
+        /* Styling for the chart image */
+        img {
+            margin-top: 20px;
+            max-width: 100%;
+            border-radius: 15px;
+            transition: all 0.5s ease;
+            display: none;
+        }
+
+        .error-message {
+            color: #e74c3c;
+            margin: 15px 0;
+            font-weight: bold;
+        }
+
+        .success-message {
+            color: #2ecc71;
+            margin: 15px 0;
+            font-weight: bold;
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 30px;
+            font-size: 0.9rem;
+            text-align: center;
+            color: #bdc3c7;
+        }
+
+        .footer a {
+            color: #f39c12;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            .container {
+                padding: 20px;
+                width: 90%;
+                max-width: 500px;
+            }
+
+            input, select, button {
+                font-size: 0.9rem;
+                padding: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+
+            .container {
+                padding: 15px;
+                width: 90%;
+                max-width: 400px;
+            }
+
+            input, select, button {
+                font-size: 0.8rem;
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Data Analysis Dashboard</h1>
+    <div class="container">
+        <form id="upload-form">
+            <input type="file" id="file-input" accept=".csv, .xlsx">
+            <select id="chart-type">
+                <option value="line">Line Chart</option>
+                <option value="bar">Bar Chart</option>
+                <option value="pie">Pie Chart</option>
+                <option value="scatter">Scatter Plot</option>
+                <option value="histogram">Histogram</option>
+                <option value="area">Area Chart</option>
+            </select>
+            <input type="text" id="chart-title" placeholder="Enter Chart Title">
+            <input type="text" id="x-label" placeholder="X-Axis Label">
+            <input type="text" id="y-label" placeholder="Y-Axis Label">
+            <input type="color" id="chart-color" value="#e67e22">
+            <button type="button" id="upload-btn">Upload File</button>
+            <button type="button" id="chart-btn" style="display:none;">Create Chart</button>
+            <button type="button" id="download-btn" style="display:none;">Download Report</button>
+        </form>
+        <div id="message"></div>
+        <img id="chart-img" alt="Generated Chart">
+    </div>
+    <div class="footer">
+        <p>&copy; 2024 Data Analysis Dashboard. Built with ❤ by <a href="#">Salar Ahmed</a></p>
+    </div>
+
+    <script>
+        let uploadedFilePath = "";
+
+        const showMessage = (message, type) => {
+            const messageDiv = document.getElementById("message");
+            messageDiv.textContent = message;
+            messageDiv.className = type === "error" ? "error-message" : "success-message";
+        };
+
+        document.getElementById("upload-btn").addEventListener("click", async () => {
+            const fileInput = document.getElementById("file-input").files[0];
+            if (!fileInput) {
+                showMessage("Please select a file.", "error");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("file", fileInput);
+
+            try {
+                const response = await fetch("/upload", { method: "POST", body: formData });
+                const result = await response.json();
+
+                if (response.ok) {
+                    showMessage(result.message, "success");
+                    uploadedFilePath = result.file_path;
+                    document.getElementById("chart-btn").style.display = "block";
+                    document.getElementById("download-btn").style.display = "block";
+                } else {
+                    showMessage(result.error || "Upload failed.", "error");
+                }
+            } catch (error) {
+                showMessage("An error occurred while uploading the file.", "error");
+            }
+        });
+
+        document.getElementById("chart-btn").addEventListener("click", async () => {
+            const chartType = document.getElementById("chart-type").value;
+            const chartTitle = document.getElementById("chart-title").value;
+            const xLabel = document.getElementById("x-label").value;
+            const yLabel = document.getElementById("y-label").value;
+            const chartColor = document.getElementById("chart-color").value;
+
+            if (!uploadedFilePath) {
+                showMessage("Please upload a file first.", "error");
+                return;
+            }
+
+            try {
+                const response = await fetch("/create-chart", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        file_path: uploadedFilePath,
+                        chart_type: chartType,
+                        chart_title: chartTitle,
+                        x_label: xLabel,
+                        y_label: yLabel,
+                        color: chartColor,
+                    }),
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    const img = document.getElementById("chart-img");
+                    img.src = "data:image/png;base64," + result.chart;
+                    img.style.display = "block";
+                    showMessage("Chart created successfully.", "success");
+                } else {
+                    showMessage(result.error || "Chart creation failed.", "error");
+                }
+            } catch (error) {
+                showMessage("An error occurred while creating the chart.", "error");
+            }
+        });
+
+        document.getElementById("download-btn").addEventListener("click", async () => {
+            if (!uploadedFilePath) {
+                showMessage("Please upload a file first.", "error");
+                return;
+            }
+
+            try {
+                const response = await fetch("/download", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ file_path: uploadedFilePath }),
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = "report.xlsx";
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    showMessage("Report downloaded successfully.", "success");
+                } else {
+                    showMessage("Failed to download the report.", "error");
+                }
+            } catch (error) {
+                showMessage("An error occurred while downloading the report.", "error");
+            }
+        });
+    </script>
+</body>
+</html>

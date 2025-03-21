@@ -1,8 +1,5 @@
 flask
-request
-render_template
-jsonify
-send_file
+requests
 matplotlib
 seaborn
 numpy

@@ -1,0 +1,9 @@
+Flask
+request
+render_template
+jsonify
+send_file
+matplotlib
+seaborn
+numpy
+pandas
